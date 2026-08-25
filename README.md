@@ -8,6 +8,7 @@
 
 1. ```mvn clean install```
 2. ```mvn spring-boot:run```
+Note: Please view LLM history chat with aider and here: https://claude.ai/share/484bf320-9078-4ac8-83ae-c360a696c186
 
 
 # Life Insurance Pricing
