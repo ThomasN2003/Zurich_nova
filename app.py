@@ -2,16 +2,16 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# ===================================
+# =====================================
 # LOAD MODEL
-# ===================================
+# =====================================
 
 model = joblib.load("premium_model.pkl")
 error_margin = joblib.load("error_margin.pkl")
 
-# ===================================
-# PAGE CONFIG
-# ===================================
+# =====================================
+# PAGE SETTINGS
+# =====================================
 
 st.set_page_config(
     page_title="Insurance Premium Predictor",
@@ -19,105 +19,72 @@ st.set_page_config(
     layout="wide"
 )
 
-# ===================================
-# STYLING
-# ===================================
+# =====================================
+# HEADER
+# =====================================
+
+st.title("💰 Insurance Premium Predictor")
 
 st.markdown("""
-<style>
+Predict an insurance premium based on customer characteristics.
 
-.stApp {
-    background-color: #f8fafc;
-}
+This model was trained using XGBoost with feature engineering and cross-validation.
+""")
 
-.main-title {
-    font-size: 42px;
-    font-weight: bold;
-    color: #0f172a;
-}
+# =====================================
+# INPUT SECTION
+# =====================================
 
-.sub-title {
-    font-size: 20px;
-    color: #475569;
-}
+st.header("Customer Details")
 
-.result-box {
-    background-color: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-}
+col1, col2 = st.columns(2)
 
-</style>
-""", unsafe_allow_html=True)
+with col1:
 
-# ===================================
-# HEADER
-# ===================================
+    age = st.slider(
+        "Age",
+        18,
+        80,
+        35
+    )
 
-st.markdown(
-    "<div class='main-title'>💰 Insurance Premium Predictor</div>",
-    unsafe_allow_html=True
-)
+    bmi = st.slider(
+        "BMI",
+        15.0,
+        55.0,
+        27.5
+    )
 
-st.markdown(
-    "<div class='sub-title'>Predict customer insurance premiums using a machine learning model</div>",
-    unsafe_allow_html=True
-)
+    children = st.selectbox(
+        "Number of Children",
+        [0, 1, 2, 3, 4, 5]
+    )
 
-st.write("")
-st.write("")
+with col2:
 
-# ===================================
-# SIDEBAR INPUTS
-# ===================================
+    gender = st.selectbox(
+        "Gender",
+        ["male", "female"]
+    )
 
-st.sidebar.header("Customer Information")
+    discount_eligibility = st.selectbox(
+        "Discount Eligibility",
+        ["yes", "no"]
+    )
 
-age = st.sidebar.slider(
-    "Age",
-    min_value=18,
-    max_value=80,
-    value=35
-)
+    region = st.selectbox(
+        "Region",
+        [
+            "northeast",
+            "northwest",
+            "southeast",
+            "southwest"
+        ]
+    )
 
-bmi = st.sidebar.slider(
-    "BMI",
-    min_value=15.0,
-    max_value=55.0,
-    value=27.5
-)
-
-children = st.sidebar.slider(
-    "Number of Children",
-    min_value=0,
-    max_value=5,
-    value=0
-)
-
-gender = st.sidebar.selectbox(
-    "Gender",
-    ["male", "female"]
-)
-
-discount_eligibility = st.sidebar.selectbox(
-    "Discount Eligibility",
-    ["yes", "no"]
-)
-
-region = st.sidebar.selectbox(
-    "Region",
-    [
-        "northeast",
-        "northwest",
-        "southeast",
-        "southwest"
-    ]
-)
-
-# ===================================
+# =====================================
 # BMI CATEGORY
-# ===================================
+# =====================================
 
 if bmi < 18.5:
     bmi_category = "Underweight"
@@ -128,91 +95,71 @@ elif bmi < 30:
 else:
     bmi_category = "Obese"
 
-# ===================================
-# CUSTOMER SUMMARY
-# ===================================
+st.info(f"BMI Category: **{bmi_category}**")
 
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric(
-        "Age",
-        age
-    )
-
-with col2:
-    st.metric(
-        "BMI Category",
-        bmi_category
-    )
-
-with col3:
-    st.metric(
-        "Children",
-        children
-    )
-
-st.divider()
-
-# ===================================
-# PREDICTION
-# ===================================
+# =====================================
+# PREDICTION BUTTON
+# =====================================
 
 if st.button(
-    "🔮 Predict Premium",
+    "Predict Premium",
     use_container_width=True
 ):
 
-    customer_data = pd.DataFrame([{
-        "age": age,
-        "bmi": bmi,
-        "children": children,
-        "gender": gender,
-        "discount_eligibility": discount_eligibility,
-        "region": region,
-        "age_squared": age ** 2,
-        "bmi_squared": bmi ** 2,
-        "age_bmi": age * bmi
-    }])
+    customer_data = pd.DataFrame([
+        {
+            "age": age,
+            "bmi": bmi,
+            "children": children,
+            "gender": gender,
+            "discount_eligibility": discount_eligibility,
+            "region": region,
+            "age_squared": age ** 2,
+            "bmi_squared": bmi ** 2,
+            "age_bmi": age * bmi
+        }
+    ])
 
-    prediction = model.predict(customer_data)[0]
+    prediction = float(
+        model.predict(customer_data)[0]
+    )
 
     lower_bound = max(
         prediction - error_margin,
         0
     )
 
-    upper_bound = (
-        prediction + error_margin
-    )
+    upper_bound = prediction + error_margin
 
-    st.success("Prediction Complete ✅")
+    # =====================================
+    # RESULTS
+    # =====================================
 
-    col1, col2 = st.columns(2)
+    st.header("Prediction Results")
+
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-
-        st.markdown("### Predicted Premium")
-
         st.metric(
-            label="Monthly Premium",
-            value=f"£{prediction:,.2f}"
+            "Predicted Premium",
+            f"£{prediction:,.2f}"
         )
 
     with col2:
-
-        st.markdown("### Expected Range")
-
         st.metric(
-            label="Confidence Range",
-            value=f"£{lower_bound:,.2f} - £{upper_bound:,.2f}"
+            "Lower Estimate",
+            f"£{lower_bound:,.2f}"
         )
 
-    st.divider()
+    with col3:
+        st.metric(
+            "Upper Estimate",
+            f"£{upper_bound:,.2f}"
+        )
 
-    # ===================================
-    # RISK LEVEL
-    # ===================================
+    # =====================================
+    # RISK PROFILE
+    # =====================================
 
     st.subheader("Risk Assessment")
 
@@ -229,45 +176,43 @@ if st.button(
 
     if risk_score == 0:
         st.success("🟢 Low Risk Profile")
+
     elif risk_score == 1:
         st.warning("🟡 Moderate Risk Profile")
+
     else:
-        st.error("🔴 Higher Risk Profile")
+        st.error("🔴 High Risk Profile")
 
-    # ===================================
-    # PREMIUM VISUAL
-    # ===================================
+    # =====================================
+    # EXPOSURE BAR
+    # =====================================
 
-    st.subheader("Premium Indicator")
+    st.subheader("Premium Scale")
 
-    progress_value = min(
-        prediction / 1000,
+    scale = min(
+        float(prediction / 1500),
         1.0
     )
 
-    st.progress(progress_value)
+    st.progress(scale)
 
-    st.caption(
-        "Premium position relative to expected pricing range."
-    )
+    # =====================================
+    # INPUT RECAP
+    # =====================================
 
-    # ===================================
-    # CUSTOMER DETAILS
-    # ===================================
-
-    st.subheader("Prediction Inputs")
+    st.subheader("Customer Summary")
 
     st.dataframe(
         customer_data,
         use_container_width=True
     )
 
-# ===================================
+# =====================================
 # FOOTER
-# ===================================
+# =====================================
 
 st.divider()
 
 st.caption(
-    "Machine Learning Model: XGBoost Regression with feature engineering and hyperparameter tuning."
+    "Built using XGBoost Regression, Feature Engineering, and Hyperparameter Tuning."
 )
