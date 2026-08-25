@@ -2,7 +2,6 @@
 -- Oracle Database Schema Conversion from PostgreSQL
 -- ============================================================================
 
--- Drop existing objects if they exist (for clean re-runs)
 BEGIN
    EXECUTE IMMEDIATE 'DROP TABLE claims CASCADE CONSTRAINTS';
 EXCEPTION WHEN OTHERS THEN NULL;
