@@ -1,0 +1,15 @@
+feature,importance
+Categorical  Discount No,0.42054963
+Categorical  Discount Yes,0.29562172
+Numeric  Age Squared,0.100841045
+Numeric  Age Bmi,0.0812478
+Numeric  Age,0.06517533
+Numeric  Bmi,0.008810353
+Numeric  Bmi Squared,0.00485507
+Numeric  Children,0.0044285064
+Categorical  Region Northwest,0.00420632
+Categorical  Region Southeast,0.0035861016
+Categorical  Region Southwest,0.003555243
+Categorical  Region Northeast,0.0032025112
+Categorical  Gender Female,0.0023778277
+Categorical  Gender Male,0.0015425561
