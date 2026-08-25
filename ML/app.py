@@ -10,30 +10,48 @@ import streamlit as st
 # ==========================================================
 
 st.set_page_config(
-    page_title="Premium Estimator",
-    page_icon="📊",
+    page_title="Insurance Pricing PoC",
+    page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 BASE_DIR = Path(__file__).resolve().parent
 
-MODEL_PATH = BASE_DIR / "premium_model.pkl"
-ERROR_MARGIN_PATH = BASE_DIR / "error_margin.pkl"
-AVERAGE_PREMIUM_PATH = BASE_DIR / "average_premium.pkl"
-MODEL_METRICS_PATH = BASE_DIR / "model_metrics.pkl"
-FEATURE_IMPORTANCE_PATH = BASE_DIR / "feature_importance.csv"
+CONTRIBUTION_MODEL_PATH = (
+    BASE_DIR / "treatment_contribution_model.pkl"
+)
+
+EXPENSE_MODEL_PATH = (
+    BASE_DIR / "annual_expense_model.pkl"
+)
+
+MODEL_METRICS_PATH = (
+    BASE_DIR / "model_metrics.pkl"
+)
+
+REFERENCE_DATA_PATH = (
+    BASE_DIR / "pricing_reference.csv"
+)
+
+CONTRIBUTION_IMPORTANCE_PATH = (
+    BASE_DIR / "contribution_feature_importance.csv"
+)
+
+EXPENSE_IMPORTANCE_PATH = (
+    BASE_DIR / "expense_feature_importance.csv"
+)
 
 
 # ==========================================================
-# CLEAN, READABLE STYLING
+# STYLING
 # ==========================================================
 
 st.markdown(
     """
     <style>
         .block-container {
-            max-width: 1180px;
+            max-width: 1200px;
             padding-top: 2rem;
             padding-bottom: 3rem;
         }
@@ -41,12 +59,11 @@ st.markdown(
         .hero {
             padding: 2rem 2.2rem;
             border-radius: 18px;
-            background:
-                linear-gradient(
-                    135deg,
-                    #092f57 0%,
-                    #0b5cab 100%
-                );
+            background: linear-gradient(
+                135deg,
+                #062f57 0%,
+                #0b67b2 100%
+            );
             color: white;
             margin-bottom: 1.5rem;
         }
@@ -55,72 +72,60 @@ st.markdown(
             color: white;
             margin: 0;
             font-size: 2.35rem;
-            line-height: 1.2;
         }
 
         .hero p {
-            color: #eaf3fb;
-            margin-top: 0.75rem;
+            color: #eaf4fc;
+            margin-top: 0.7rem;
             margin-bottom: 0;
             font-size: 1.05rem;
-            max-width: 800px;
-        }
-
-        .section-card {
-            border: 1px solid #dce4ec;
-            border-radius: 14px;
-            padding: 1.25rem 1.4rem;
-            background-color: white;
-            margin-bottom: 1rem;
+            max-width: 850px;
         }
 
         .result-card {
-            border: 1px solid #b8d3ef;
-            border-radius: 16px;
-            padding: 1.4rem;
-            background-color: #f3f8fd;
-            min-height: 150px;
+            background-color: #f4f8fc;
+            border: 1px solid #bdd4e8;
+            border-radius: 14px;
+            padding: 1.25rem;
+            min-height: 155px;
         }
 
         .result-label {
             color: #425466;
             font-size: 0.95rem;
-            font-weight: 600;
-            margin-bottom: 0.4rem;
+            font-weight: 650;
         }
 
         .result-value {
-            color: #092f57;
-            font-size: 2rem;
+            color: #07345e;
+            font-size: 1.9rem;
             font-weight: 750;
-            line-height: 1.2;
+            margin-top: 0.35rem;
         }
 
         .result-note {
-            color: #526579;
-            font-size: 0.9rem;
+            color: #5c6d7d;
+            font-size: 0.88rem;
             margin-top: 0.55rem;
         }
 
-        .comparison-positive {
-            color: #9b2c2c;
-            font-weight: 700;
-        }
-
-        .comparison-negative {
-            color: #17663a;
-            font-weight: 700;
+        .breakdown-card {
+            border: 1px solid #d9e2ea;
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            background-color: white;
+            margin-bottom: 0.75rem;
         }
 
         div[data-testid="stButton"] > button {
-            min-height: 3.25rem;
+            min-height: 3.2rem;
             border-radius: 10px;
-            font-size: 1.05rem;
             font-weight: 700;
+            font-size: 1rem;
         }
 
         div[data-testid="stMetric"] {
-            border: 1px solid #e1e7ed;
+            border: 1px solid #e0e7ee;
             border-radius: 12px;
             padding: 1rem;
             background-color: white;
@@ -137,14 +142,14 @@ st.markdown(
 
 
 # ==========================================================
-# LOAD SAVED ASSETS
+# LOAD ASSETS
 # ==========================================================
 
 required_files = [
-    MODEL_PATH,
-    ERROR_MARGIN_PATH,
-    AVERAGE_PREMIUM_PATH,
+    CONTRIBUTION_MODEL_PATH,
+    EXPENSE_MODEL_PATH,
     MODEL_METRICS_PATH,
+    REFERENCE_DATA_PATH,
 ]
 
 missing_files = [
@@ -155,74 +160,116 @@ missing_files = [
 
 if missing_files:
     st.error(
-        "The application cannot start because these trained "
-        "model files are missing:"
+        "The application cannot start because trained "
+        "model files are missing."
     )
 
     for file_name in missing_files:
         st.write(f"- `{file_name}`")
 
     st.info(
-        "Run `python training.py` successfully, then restart "
-        "the Streamlit application."
+        "Run `python training.py` successfully, "
+        "then restart Streamlit."
     )
 
     st.stop()
 
 
 @st.cache_resource
-def load_model_assets():
-    """Load trained model artefacts once per app session."""
-    loaded_model = joblib.load(MODEL_PATH)
-    loaded_error = float(
-        joblib.load(ERROR_MARGIN_PATH)
+def load_models():
+    contribution_model = joblib.load(
+        CONTRIBUTION_MODEL_PATH
     )
-    loaded_average = float(
-        joblib.load(AVERAGE_PREMIUM_PATH)
+
+    expense_model = joblib.load(
+        EXPENSE_MODEL_PATH
     )
-    loaded_metrics = joblib.load(
+
+    metrics = joblib.load(
         MODEL_METRICS_PATH
     )
 
     return (
-        loaded_model,
-        loaded_error,
-        loaded_average,
-        loaded_metrics,
+        contribution_model,
+        expense_model,
+        metrics,
     )
 
 
 @st.cache_data
-def load_feature_importance():
-    """Load the saved global feature importance data."""
-    if not FEATURE_IMPORTANCE_PATH.exists():
-        return None
-
+def load_reference_data():
     return pd.read_csv(
-        FEATURE_IMPORTANCE_PATH
+        REFERENCE_DATA_PATH
     )
 
 
-model, typical_error, average_premium, metrics = (
-    load_model_assets()
+@st.cache_data
+def load_importance(path):
+    if not path.exists():
+        return None
+
+    return pd.read_csv(path)
+
+
+(
+    contribution_model,
+    expense_model,
+    metrics,
+) = load_models()
+
+reference_data = load_reference_data()
+
+contribution_importance = load_importance(
+    CONTRIBUTION_IMPORTANCE_PATH
 )
 
-feature_importance = load_feature_importance()
+expense_importance = load_importance(
+    EXPENSE_IMPORTANCE_PATH
+)
 
 
 # ==========================================================
-# HELPER FUNCTIONS
+# HELPERS
 # ==========================================================
+
+def format_label(value):
+    return (
+        str(value)
+        .replace("_", " ")
+        .title()
+    )
+
 
 def get_bmi_category(bmi):
-    """Return an explanatory BMI band."""
     if bmi < 18.5:
         return "Underweight"
+
     if bmi < 25:
         return "Healthy range"
+
     if bmi < 30:
         return "Overweight"
+
     return "Obese range"
+
+
+def get_age_group(age):
+    if age <= 25:
+        return "18 to 25"
+
+    if age <= 35:
+        return "26 to 35"
+
+    if age <= 45:
+        return "36 to 45"
+
+    if age <= 55:
+        return "46 to 55"
+
+    if age <= 65:
+        return "56 to 65"
+
+    return "66 and over"
 
 
 def build_customer_record(
@@ -232,38 +279,196 @@ def build_customer_record(
     gender,
     discount_eligibility,
     region,
+    expenses=None,
 ):
-    """Build one model-ready customer record."""
-    return pd.DataFrame(
-        [
-            {
-                "age": age,
-                "bmi": bmi,
-                "children": children,
-                "gender": gender,
-                "discount_eligibility": (
-                    discount_eligibility
-                ),
-                "region": region,
-                "age_squared": age ** 2,
-                "bmi_squared": bmi ** 2,
-                "age_bmi": age * bmi,
-            }
-        ]
+    record = {
+        "age": int(age),
+        "bmi": float(bmi),
+        "children": int(children),
+        "gender": gender,
+        "discount_eligibility": (
+            discount_eligibility
+        ),
+        "region": region,
+        "age_squared": float(age) ** 2,
+        "bmi_squared": float(bmi) ** 2,
+        "age_bmi": float(age) * float(bmi),
+    }
+
+    if expenses is not None:
+        record["expenses"] = float(expenses)
+
+    return pd.DataFrame([record])
+
+
+def predict_contribution(
+    customer_record,
+    treatment_cost,
+):
+    raw_prediction = contribution_model.predict(
+        customer_record
+    )[0]
+
+    contribution = max(
+        float(raw_prediction),
+        0.0,
     )
 
+    # A customer contribution cannot exceed
+    # the hospital bill.
+    contribution = min(
+        contribution,
+        float(treatment_cost),
+    )
 
-def format_label(value):
-    """Make stored category values readable."""
-    return str(value).replace("_", " ").title()
+    return contribution
+
+
+def display_customer_form(
+    form_key,
+    button_text,
+    include_treatment_cost=False,
+):
+    with st.form(form_key):
+        column_1, column_2, column_3 = (
+            st.columns(3)
+        )
+
+        with column_1:
+            age = st.number_input(
+                "Age",
+                min_value=18,
+                max_value=100,
+                value=35,
+                step=1,
+                key=f"{form_key}_age",
+            )
+
+            gender = st.selectbox(
+                "Gender",
+                ["male", "female"],
+                format_func=format_label,
+                key=f"{form_key}_gender",
+            )
+
+        with column_2:
+            bmi = st.number_input(
+                "Body mass index (BMI)",
+                min_value=10.0,
+                max_value=70.0,
+                value=27.5,
+                step=0.1,
+                key=f"{form_key}_bmi",
+            )
+
+            children = st.number_input(
+                "Number of children",
+                min_value=0,
+                max_value=20,
+                value=0,
+                step=1,
+                key=f"{form_key}_children",
+            )
+
+        with column_3:
+            discount = st.selectbox(
+                "Discount eligible",
+                ["no", "yes"],
+                format_func=format_label,
+                key=f"{form_key}_discount",
+            )
+
+            region = st.selectbox(
+                "Region",
+                [
+                    "northeast",
+                    "northwest",
+                    "southeast",
+                    "southwest",
+                ],
+                format_func=format_label,
+                key=f"{form_key}_region",
+            )
+
+        treatment_cost = None
+
+        if include_treatment_cost:
+            treatment_cost = st.number_input(
+                "Hospital treatment cost",
+                min_value=1.0,
+                max_value=1_000_000.0,
+                value=10_000.0,
+                step=100.0,
+                format="%.2f",
+                help=(
+                    "The amount requested by the hospital "
+                    "for this treatment."
+                ),
+                key=f"{form_key}_treatment_cost",
+            )
+
+        submitted = st.form_submit_button(
+            button_text,
+            type="primary",
+            use_container_width=True,
+        )
+
+    return {
+        "submitted": submitted,
+        "age": int(age),
+        "bmi": float(bmi),
+        "children": int(children),
+        "gender": gender,
+        "discount": discount,
+        "region": region,
+        "treatment_cost": treatment_cost,
+    }
+
+
+def show_feature_chart(
+    importance_data,
+    title,
+):
+    st.subheader(title)
+
+    if (
+        importance_data is None
+        or importance_data.empty
+    ):
+        st.info(
+            "Feature importance data is unavailable. "
+            "Run training.py again."
+        )
+        return
+
+    chart_data = (
+        importance_data
+        .head(10)
+        .set_index("feature")[["importance"]]
+    )
+
+    st.bar_chart(
+        chart_data,
+        horizontal=True,
+        color="#2167d5",
+    )
+
+    st.caption(
+        "This shows overall model importance across "
+        "the dataset. It does not prove that a feature "
+        "caused a particular result."
+    )
 
 
 # ==========================================================
 # SESSION STATE
 # ==========================================================
 
-if "prediction_result" not in st.session_state:
-    st.session_state.prediction_result = None
+if "claim_result" not in st.session_state:
+    st.session_state.claim_result = None
+
+if "policy_result" not in st.session_state:
+    st.session_state.policy_result = None
 
 
 # ==========================================================
@@ -273,12 +478,12 @@ if "prediction_result" not in st.session_state:
 st.markdown(
     """
     <div class="hero">
-        <h1>Insurance Premium Estimator</h1>
+        <h1>Insurance Pricing Proof of Concept</h1>
         <p>
-            Enter a small set of customer details to receive an
-            illustrative premium estimate from the trained XGBoost
-            model. The result also includes a typical prediction
-            range and a comparison with the dataset average.
+            Estimate an existing policyholder's contribution
+            towards a hospital treatment, or create an
+            illustrative annual policy price from expected
+            treatment costs and transparent pricing assumptions.
         </p>
     </div>
     """,
@@ -291,540 +496,900 @@ st.markdown(
 # ==========================================================
 
 with st.sidebar:
-    st.header("About this demonstration")
+    st.header("Model overview")
 
     st.write(
-        "The model predicts the premium using age, BMI, number "
-        "of children, gender, region, and discount eligibility."
+        "Two XGBoost models support this application."
     )
 
-    st.info(
-        "Medical expenses are deliberately excluded to avoid "
-        "giving the model information that would not normally "
-        "be entered by a customer."
+    st.markdown(
+        """
+        **Treatment contribution model**
+
+        Uses the customer details and hospital bill to
+        estimate the amount paid by the customer.
+
+        **Policy illustration model**
+
+        Uses customer details to estimate treatment cost.
+        Transparent pricing assumptions are then applied
+        to create annual and monthly illustrations.
+        """
     )
 
     st.divider()
 
-    st.subheader("Model snapshot")
-
     st.metric(
-        "Test R²",
-        f"{float(metrics['test_r2']):.3f}",
+        "Contribution model R²",
+        (
+            f"{metrics['contribution_model']['r2']:.3f}"
+        ),
     )
 
     st.metric(
-        "Test MAE",
-        f"£{float(metrics['test_mae']):,.2f}",
+        "Expense model R²",
+        (
+            f"{metrics['expense_model']['r2']:.3f}"
+        ),
     )
 
     st.caption(
-        "R² measures how much variation the model explains. "
-        "MAE is the model's average absolute test error."
+        "These scores describe performance on held-out "
+        "test data. They do not make the models suitable "
+        "for live insurance decisions."
     )
 
 
 # ==========================================================
-# INPUT FORM
+# TABS
 # ==========================================================
 
-st.header("1. Enter customer details")
-
-st.write(
-    "Choose an example profile or enter custom values. "
-    "All fields are required."
+claim_tab, policy_tab, insights_tab = st.tabs(
+    [
+        "Treatment contribution",
+        "Policy illustration",
+        "Dataset insights",
+    ]
 )
 
-profile_options = {
-    "Custom profile": {
-        "age": 35,
-        "bmi": 27.5,
-        "children": 0,
-        "gender": "male",
-        "discount": "no",
-        "region": "northwest",
-    },
-    "Young individual": {
-        "age": 23,
-        "bmi": 23.0,
-        "children": 0,
-        "gender": "female",
-        "discount": "yes",
-        "region": "northeast",
-    },
-    "Family household": {
-        "age": 38,
-        "bmi": 28.0,
-        "children": 2,
-        "gender": "male",
-        "discount": "no",
-        "region": "southwest",
-    },
-    "Older customer": {
-        "age": 58,
-        "bmi": 30.0,
-        "children": 1,
-        "gender": "female",
-        "discount": "yes",
-        "region": "southeast",
-    },
-}
-
-selected_profile_name = st.selectbox(
-    "Example profile",
-    list(profile_options.keys()),
-)
-
-selected_profile = profile_options[
-    selected_profile_name
-]
-
-with st.form("premium_prediction_form"):
-    input_col_1, input_col_2, input_col_3 = (
-        st.columns(3)
-    )
-
-    with input_col_1:
-        age = st.number_input(
-            "Age",
-            min_value=18,
-            max_value=100,
-            value=int(selected_profile["age"]),
-            step=1,
-            help="Age of the customer in years.",
-        )
-
-        gender_options = [
-            "male",
-            "female",
-        ]
-
-        gender = st.selectbox(
-            "Gender",
-            gender_options,
-            index=gender_options.index(
-                selected_profile["gender"]
-            ),
-            format_func=format_label,
-        )
-
-    with input_col_2:
-        bmi = st.number_input(
-            "Body mass index (BMI)",
-            min_value=10.0,
-            max_value=70.0,
-            value=float(selected_profile["bmi"]),
-            step=0.1,
-            help=(
-                "BMI is used here because it is present in the "
-                "demonstration training dataset."
-            ),
-        )
-
-        children = st.number_input(
-            "Number of children",
-            min_value=0,
-            max_value=20,
-            value=int(selected_profile["children"]),
-            step=1,
-        )
-
-    with input_col_3:
-        discount_options = [
-            "no",
-            "yes",
-        ]
-
-        discount_eligibility = st.selectbox(
-            "Discount eligible",
-            discount_options,
-            index=discount_options.index(
-                selected_profile["discount"]
-            ),
-            format_func=format_label,
-        )
-
-        region_options = [
-            "northeast",
-            "northwest",
-            "southeast",
-            "southwest",
-        ]
-
-        region = st.selectbox(
-            "Region",
-            region_options,
-            index=region_options.index(
-                selected_profile["region"]
-            ),
-            format_func=format_label,
-        )
-
-    submitted = st.form_submit_button(
-        "Calculate premium estimate",
-        type="primary",
-        use_container_width=True,
-    )
-
 
 # ==========================================================
-# MAKE PREDICTION
+# TAB 1: TREATMENT CONTRIBUTION
 # ==========================================================
 
-if submitted:
-    customer_data = build_customer_record(
-        age=int(age),
-        bmi=float(bmi),
-        children=int(children),
-        gender=gender,
-        discount_eligibility=(
-            discount_eligibility
+with claim_tab:
+    st.header(
+        "Existing policyholder treatment contribution"
+    )
+
+    st.write(
+        "Enter the policyholder's details and the amount "
+        "requested by the hospital. The model estimates "
+        "the amount the customer contributes and the amount "
+        "the insurer covers."
+    )
+
+    claim_inputs = display_customer_form(
+        form_key="claim_form",
+        button_text=(
+            "Calculate treatment contribution"
         ),
-        region=region,
+        include_treatment_cost=True,
     )
 
-    raw_prediction = model.predict(
-        customer_data
-    )[0]
+    if claim_inputs["submitted"]:
+        claim_record = build_customer_record(
+            age=claim_inputs["age"],
+            bmi=claim_inputs["bmi"],
+            children=claim_inputs["children"],
+            gender=claim_inputs["gender"],
+            discount_eligibility=(
+                claim_inputs["discount"]
+            ),
+            region=claim_inputs["region"],
+            expenses=(
+                claim_inputs["treatment_cost"]
+            ),
+        )
 
-    prediction = max(
-        float(raw_prediction),
-        0.0,
-    )
+        customer_contribution = (
+            predict_contribution(
+                claim_record,
+                claim_inputs["treatment_cost"],
+            )
+        )
 
-    lower_estimate = max(
-        prediction - typical_error,
-        0.0,
-    )
+        insurer_contribution = max(
+            claim_inputs["treatment_cost"]
+            - customer_contribution,
+            0,
+        )
 
-    upper_estimate = (
-        prediction + typical_error
-    )
-
-    difference_amount = (
-        prediction - average_premium
-    )
-
-    if average_premium != 0:
-        difference_percentage = (
-            difference_amount
-            / average_premium
+        customer_percentage = (
+            customer_contribution
+            / claim_inputs["treatment_cost"]
             * 100
         )
-    else:
-        difference_percentage = 0.0
 
-    st.session_state.prediction_result = {
-        "prediction": prediction,
-        "lower_estimate": lower_estimate,
-        "upper_estimate": upper_estimate,
-        "difference_amount": difference_amount,
-        "difference_percentage": (
-            difference_percentage
-        ),
-        "age": int(age),
-        "bmi": float(bmi),
-        "bmi_category": get_bmi_category(
-            float(bmi)
-        ),
-        "children": int(children),
-        "gender": format_label(gender),
-        "discount": format_label(
-            discount_eligibility
-        ),
-        "region": format_label(region),
-    }
+        contribution_error = float(
+            metrics[
+                "contribution_model"
+            ]["typical_error"]
+        )
 
+        lower_contribution = max(
+            customer_contribution
+            - contribution_error,
+            0,
+        )
 
-# ==========================================================
-# DISPLAY RESULTS
-# ==========================================================
+        upper_contribution = min(
+            customer_contribution
+            + contribution_error,
+            claim_inputs["treatment_cost"],
+        )
 
-result = st.session_state.prediction_result
+        st.session_state.claim_result = {
+            "treatment_cost": (
+                claim_inputs["treatment_cost"]
+            ),
+            "customer_contribution": (
+                customer_contribution
+            ),
+            "insurer_contribution": (
+                insurer_contribution
+            ),
+            "customer_percentage": (
+                customer_percentage
+            ),
+            "lower_contribution": (
+                lower_contribution
+            ),
+            "upper_contribution": (
+                upper_contribution
+            ),
+            "age": claim_inputs["age"],
+            "bmi": claim_inputs["bmi"],
+            "bmi_group": get_bmi_category(
+                claim_inputs["bmi"]
+            ),
+            "region": format_label(
+                claim_inputs["region"]
+            ),
+            "discount": format_label(
+                claim_inputs["discount"]
+            ),
+        }
 
-if result is None:
-    st.info(
-        "Complete the form and select "
-        "'Calculate premium estimate' to see the result."
+    claim_result = (
+        st.session_state.claim_result
     )
 
-else:
-    st.divider()
-    st.header("2. Your premium estimate")
+    if claim_result is None:
+        st.info(
+            "Complete the form to calculate the "
+            "treatment contribution."
+        )
 
-    result_col_1, result_col_2, result_col_3 = (
+    else:
+        st.divider()
+        st.subheader("Contribution estimate")
+
+        result_column_1, result_column_2, result_column_3 = (
+            st.columns(3)
+        )
+
+        with result_column_1:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Hospital treatment cost
+                    </div>
+                    <div class="result-value">
+                        £{claim_result["treatment_cost"]:,.2f}
+                    </div>
+                    <div class="result-note">
+                        Total amount requested by the hospital.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with result_column_2:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Estimated customer contribution
+                    </div>
+                    <div class="result-value">
+                        £{claim_result["customer_contribution"]:,.2f}
+                    </div>
+                    <div class="result-note">
+                        Approximately
+                        {claim_result["customer_percentage"]:.2f}%
+                        of the treatment bill.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with result_column_3:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Estimated insurer contribution
+                    </div>
+                    <div class="result-value">
+                        £{claim_result["insurer_contribution"]:,.2f}
+                    </div>
+                    <div class="result-note">
+                        Treatment cost less the estimated
+                        customer contribution.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.info(
+            "Typical customer contribution range: "
+            f"£{claim_result['lower_contribution']:,.2f} "
+            f"to £{claim_result['upper_contribution']:,.2f}. "
+            "This range uses average historical model error "
+            "and is not a guarantee."
+        )
+
+        st.subheader("Policyholder summary")
+
+        summary_1, summary_2, summary_3, summary_4 = (
+            st.columns(4)
+        )
+
+        summary_1.metric(
+            "Age",
+            claim_result["age"],
+        )
+
+        summary_2.metric(
+            "BMI",
+            f"{claim_result['bmi']:.1f}",
+        )
+
+        summary_3.metric(
+            "BMI band",
+            claim_result["bmi_group"],
+        )
+
+        summary_4.metric(
+            "Region",
+            claim_result["region"],
+        )
+
+        show_feature_chart(
+            contribution_importance,
+            (
+                "What influences treatment "
+                "contributions overall?"
+            ),
+        )
+
+
+# ==========================================================
+# TAB 2: POLICY ILLUSTRATION
+# ==========================================================
+
+with policy_tab:
+    st.header("Illustrative policy pricing")
+
+    st.write(
+        "The model estimates one expected treatment cost "
+        "for the customer. The application then estimates "
+        "the insurer-funded portion and adds transparent "
+        "administration, uncertainty, and margin assumptions."
+    )
+
+    policy_inputs = display_customer_form(
+        form_key="policy_form",
+        button_text=(
+            "Create policy illustration"
+        ),
+        include_treatment_cost=False,
+    )
+
+    st.subheader("Illustrative pricing assumptions")
+
+    assumption_column_1, assumption_column_2, assumption_column_3 = (
         st.columns(3)
     )
 
-    with result_col_1:
-        st.markdown(
-            f"""
-            <div class="result-card">
-                <div class="result-label">
-                    Predicted premium
-                </div>
-                <div class="result-value">
-                    £{result["prediction"]:,.2f}
-                </div>
-                <div class="result-note">
-                    The central estimate produced by the
-                    trained model.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    with assumption_column_1:
+        claims_per_year = st.number_input(
+            "Expected treatments per year",
+            min_value=0.1,
+            max_value=10.0,
+            value=1.0,
+            step=0.1,
+            help=(
+                "The dataset contains one claim per person. "
+                "The default therefore assumes one treatment "
+                "exposure per year."
+            ),
         )
 
-    with result_col_2:
-        st.markdown(
-            f"""
-            <div class="result-card">
-                <div class="result-label">
-                    Typical estimate range
-                </div>
-                <div class="result-value">
-                    £{result["lower_estimate"]:,.2f}
-                    to
-                    £{result["upper_estimate"]:,.2f}
-                </div>
-                <div class="result-note">
-                    Based on the model's average absolute
-                    error on held-out test data.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    with assumption_column_2:
+        administration_rate = st.slider(
+            "Administration loading",
+            min_value=0,
+            max_value=30,
+            value=10,
+            step=1,
+            format="%d%%",
         )
 
-    with result_col_3:
-        comparison_class = (
-            "comparison-positive"
-            if result["difference_amount"] > 0
-            else "comparison-negative"
+    with assumption_column_3:
+        uncertainty_rate = st.slider(
+            "Uncertainty and contingency loading",
+            min_value=0,
+            max_value=30,
+            value=10,
+            step=1,
+            format="%d%%",
         )
 
-        comparison_word = (
-            "above"
-            if result["difference_amount"] > 0
-            else "below"
-        )
-
-        if result["difference_amount"] == 0:
-            comparison_word = "equal to"
-
-        st.markdown(
-            f"""
-            <div class="result-card">
-                <div class="result-label">
-                    Compared with dataset average
-                </div>
-                <div class="result-value">
-                    {result["difference_percentage"]:+.1f}%
-                </div>
-                <div class="result-note">
-                    <span class="{comparison_class}">
-                        £{abs(result["difference_amount"]):,.2f}
-                        {comparison_word} average
-                    </span>
-                    <br>
-                    Dataset average:
-                    £{average_premium:,.2f}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    margin_rate = st.slider(
+        "Illustrative margin",
+        min_value=0,
+        max_value=20,
+        value=5,
+        step=1,
+        format="%d%%",
+    )
 
     st.caption(
-        "The typical estimate range is not a guaranteed result "
-        "or a formal statistical confidence interval."
+        "These assumptions are editable demonstration "
+        "inputs. They were not learned from the dataset."
     )
 
-    st.subheader("Customer summary")
+    if policy_inputs["submitted"]:
+        quote_eligible = all(
+            [
+                policy_inputs["age"] >= 18,
+                policy_inputs["bmi"] > 0,
+                policy_inputs["children"] >= 0,
+                bool(policy_inputs["gender"]),
+                bool(policy_inputs["discount"]),
+                bool(policy_inputs["region"]),
+            ]
+        )
 
-    summary_col_1, summary_col_2, summary_col_3 = (
-        st.columns(3)
+        customer_record = build_customer_record(
+            age=policy_inputs["age"],
+            bmi=policy_inputs["bmi"],
+            children=policy_inputs["children"],
+            gender=policy_inputs["gender"],
+            discount_eligibility=(
+                policy_inputs["discount"]
+            ),
+            region=policy_inputs["region"],
+        )
+
+        predicted_treatment_cost = max(
+            float(
+                expense_model.predict(
+                    customer_record
+                )[0]
+            ),
+            0,
+        )
+
+        contribution_record = (
+            customer_record.copy()
+        )
+
+        contribution_record["expenses"] = (
+            predicted_treatment_cost
+        )
+
+        predicted_claim_contribution = (
+            predict_contribution(
+                contribution_record,
+                predicted_treatment_cost,
+            )
+        )
+
+        expected_insurer_cost_per_treatment = max(
+            predicted_treatment_cost
+            - predicted_claim_contribution,
+            0,
+        )
+
+        annual_expected_claim_cost = (
+            expected_insurer_cost_per_treatment
+            * float(claims_per_year)
+        )
+
+        administration_amount = (
+            annual_expected_claim_cost
+            * administration_rate
+            / 100
+        )
+
+        uncertainty_amount = (
+            annual_expected_claim_cost
+            * uncertainty_rate
+            / 100
+        )
+
+        margin_amount = (
+            annual_expected_claim_cost
+            * margin_rate
+            / 100
+        )
+
+        annual_policy_price = (
+            annual_expected_claim_cost
+            + administration_amount
+            + uncertainty_amount
+            + margin_amount
+        )
+
+        monthly_policy_price = (
+            annual_policy_price / 12
+        )
+
+        expense_error = float(
+            metrics[
+                "expense_model"
+            ]["typical_error"]
+        )
+
+        lower_expected_cost = max(
+            predicted_treatment_cost
+            - expense_error,
+            0,
+        )
+
+        upper_expected_cost = (
+            predicted_treatment_cost
+            + expense_error
+        )
+
+        st.session_state.policy_result = {
+            "eligible": quote_eligible,
+            "predicted_treatment_cost": (
+                predicted_treatment_cost
+            ),
+            "lower_expected_cost": (
+                lower_expected_cost
+            ),
+            "upper_expected_cost": (
+                upper_expected_cost
+            ),
+            "predicted_claim_contribution": (
+                predicted_claim_contribution
+            ),
+            "expected_insurer_cost_per_treatment": (
+                expected_insurer_cost_per_treatment
+            ),
+            "annual_expected_claim_cost": (
+                annual_expected_claim_cost
+            ),
+            "administration_amount": (
+                administration_amount
+            ),
+            "uncertainty_amount": (
+                uncertainty_amount
+            ),
+            "margin_amount": margin_amount,
+            "annual_policy_price": (
+                annual_policy_price
+            ),
+            "monthly_policy_price": (
+                monthly_policy_price
+            ),
+            "claims_per_year": (
+                claims_per_year
+            ),
+            "administration_rate": (
+                administration_rate
+            ),
+            "uncertainty_rate": (
+                uncertainty_rate
+            ),
+            "margin_rate": margin_rate,
+            "age_group": get_age_group(
+                policy_inputs["age"]
+            ),
+            "bmi_group": get_bmi_category(
+                policy_inputs["bmi"]
+            ),
+        }
+
+    policy_result = (
+        st.session_state.policy_result
     )
 
-    with summary_col_1:
-        st.metric(
-            "Age",
-            f"{result['age']} years",
-        )
-
-        st.metric(
-            "Gender",
-            result["gender"],
-        )
-
-    with summary_col_2:
-        st.metric(
-            "BMI",
-            f"{result['bmi']:.1f}",
-        )
-
-        st.metric(
-            "BMI band",
-            result["bmi_category"],
-        )
-
-    with summary_col_3:
-        st.metric(
-            "Children",
-            result["children"],
-        )
-
-        st.metric(
-            "Region",
-            result["region"],
-        )
-
-    if result["discount"] == "Yes":
-        st.success(
-            "The estimate includes the customer's recorded "
-            "discount eligibility."
-        )
-    else:
+    if policy_result is None:
         st.info(
-            "This profile is not recorded as discount eligible."
+            "Complete the customer form and select "
+            "'Create policy illustration'."
+        )
+
+    else:
+        st.divider()
+
+        if policy_result["eligible"]:
+            st.success(
+                "Eligible to receive an indicative policy "
+                "illustration, subject to underwriting, "
+                "policy terms, and appropriate review."
+            )
+        else:
+            st.error(
+                "The application cannot produce an "
+                "illustration because required information "
+                "is incomplete or invalid."
+            )
+
+        st.subheader("Illustrative policy price")
+
+        price_column_1, price_column_2, price_column_3 = (
+            st.columns(3)
+        )
+
+        with price_column_1:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Expected treatment cost
+                    </div>
+                    <div class="result-value">
+                        £{policy_result["predicted_treatment_cost"]:,.2f}
+                    </div>
+                    <div class="result-note">
+                        Model estimate for one treatment
+                        exposure.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with price_column_2:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Indicative annual policy price
+                    </div>
+                    <div class="result-value">
+                        £{policy_result["annual_policy_price"]:,.2f}
+                    </div>
+                    <div class="result-note">
+                        Expected insurer cost plus the selected
+                        pricing loadings.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with price_column_3:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Monthly equivalent
+                    </div>
+                    <div class="result-value">
+                        £{policy_result["monthly_policy_price"]:,.2f}
+                    </div>
+                    <div class="result-note">
+                        Annual illustration divided by
+                        twelve months.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.info(
+            "Typical model range for one expected treatment: "
+            f"£{policy_result['lower_expected_cost']:,.2f} "
+            f"to £{policy_result['upper_expected_cost']:,.2f}. "
+            "This is based on historical prediction error."
+        )
+
+        st.subheader("How the annual price was built")
+
+        breakdown = pd.DataFrame(
+            {
+                "Pricing component": [
+                    (
+                        "Expected insurer-funded "
+                        "treatment cost"
+                    ),
+                    (
+                        "Expected treatments "
+                        "per year"
+                    ),
+                    (
+                        "Annual expected claim cost"
+                    ),
+                    (
+                        f"Administration "
+                        f"({policy_result['administration_rate']}%)"
+                    ),
+                    (
+                        f"Uncertainty and contingency "
+                        f"({policy_result['uncertainty_rate']}%)"
+                    ),
+                    (
+                        f"Illustrative margin "
+                        f"({policy_result['margin_rate']}%)"
+                    ),
+                    "Indicative annual policy price",
+                    "Monthly equivalent",
+                ],
+                "Value": [
+                    (
+                        f"£{policy_result['expected_insurer_cost_per_treatment']:,.2f}"
+                    ),
+                    (
+                        f"{policy_result['claims_per_year']:.1f}"
+                    ),
+                    (
+                        f"£{policy_result['annual_expected_claim_cost']:,.2f}"
+                    ),
+                    (
+                        f"£{policy_result['administration_amount']:,.2f}"
+                    ),
+                    (
+                        f"£{policy_result['uncertainty_amount']:,.2f}"
+                    ),
+                    (
+                        f"£{policy_result['margin_amount']:,.2f}"
+                    ),
+                    (
+                        f"£{policy_result['annual_policy_price']:,.2f}"
+                    ),
+                    (
+                        f"£{policy_result['monthly_policy_price']:,.2f}"
+                    ),
+                ],
+            }
+        )
+
+        st.dataframe(
+            breakdown,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.caption(
+            "The customer treatment contribution is deducted "
+            "before estimating the insurer-funded treatment "
+            "cost. The annual policy price is separate from "
+            "the contribution paid when treatment occurs."
+        )
+
+        show_feature_chart(
+            expense_importance,
+            (
+                "What influences expected treatment "
+                "cost overall?"
+            ),
         )
 
 
 # ==========================================================
-# MODEL EXPLAINABILITY
+# TAB 3: DATASET INSIGHTS
+# ==========================================================
+
+with insights_tab:
+    st.header(
+        "Pricing reference from the dataset"
+    )
+
+    st.write(
+        "These summaries show average treatment costs and "
+        "customer contributions across groups in the supplied "
+        "data. They provide context for the models but should "
+        "not be interpreted as causal relationships."
+    )
+
+    overall = metrics["overall_statistics"]
+
+    metric_1, metric_2, metric_3, metric_4 = (
+        st.columns(4)
+    )
+
+    metric_1.metric(
+        "Records",
+        f"{overall['record_count']:,}",
+    )
+
+    metric_2.metric(
+        "Average treatment cost",
+        (
+            f"£{overall['average_treatment_cost']:,.2f}"
+        ),
+    )
+
+    metric_3.metric(
+        "Average customer contribution",
+        (
+            f"£{overall['average_customer_contribution']:,.2f}"
+        ),
+    )
+
+    metric_4.metric(
+        "Average contribution rate",
+        (
+            f"{overall['average_customer_contribution_rate'] * 100:.2f}%"
+        ),
+    )
+
+    selected_category = st.selectbox(
+        "View reference information by",
+        sorted(
+            reference_data["category"]
+            .dropna()
+            .unique()
+        ),
+    )
+
+    filtered_reference = (
+        reference_data[
+            reference_data["category"]
+            == selected_category
+        ]
+        .copy()
+    )
+
+    filtered_reference[
+        "average_treatment_cost"
+    ] = filtered_reference[
+        "average_treatment_cost"
+    ].round(2)
+
+    filtered_reference[
+        "median_treatment_cost"
+    ] = filtered_reference[
+        "median_treatment_cost"
+    ].round(2)
+
+    filtered_reference[
+        "average_customer_contribution"
+    ] = filtered_reference[
+        "average_customer_contribution"
+    ].round(2)
+
+    filtered_reference[
+        "average_contribution_rate"
+    ] = filtered_reference[
+        "average_contribution_rate"
+    ].round(2)
+
+    filtered_reference = (
+        filtered_reference.rename(
+            columns={
+                "group_value": "Group",
+                "record_count": "Records",
+                "average_treatment_cost": (
+                    "Average treatment cost"
+                ),
+                "median_treatment_cost": (
+                    "Median treatment cost"
+                ),
+                "average_customer_contribution": (
+                    "Average customer contribution"
+                ),
+                "average_contribution_rate": (
+                    "Average contribution rate (%)"
+                ),
+            }
+        )
+    )
+
+    st.dataframe(
+        filtered_reference,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    chart_reference = (
+        filtered_reference[
+            [
+                "Group",
+                "Average treatment cost",
+            ]
+        ]
+        .set_index("Group")
+    )
+
+    st.bar_chart(
+        chart_reference,
+        color="#2167d5",
+    )
+
+
+# ==========================================================
+# METHODOLOGY AND DISCLAIMER
 # ==========================================================
 
 st.divider()
-st.header("3. Understand the model")
-
-explanation_col_1, explanation_col_2 = (
-    st.columns([1.15, 0.85])
-)
-
-with explanation_col_1:
-    st.subheader("What influences predictions overall?")
-
-    st.write(
-        "The chart shows which inputs had the greatest overall "
-        "influence across the training data. It does not explain "
-        "one individual prediction on its own."
-    )
-
-    if (
-        feature_importance is not None
-        and not feature_importance.empty
-    ):
-        chart_data = (
-            feature_importance
-            .head(10)
-            .set_index("feature")[["importance"]]
-        )
-
-        st.bar_chart(
-            chart_data,
-            horizontal=True,
-            color="#2167d5",
-        )
-    else:
-        st.info(
-            "Run `python training.py` to generate the feature "
-            "importance information."
-        )
-
-with explanation_col_2:
-    st.subheader("Model performance")
-
-    metric_col_1, metric_col_2 = st.columns(2)
-
-    with metric_col_1:
-        st.metric(
-            "Test R²",
-            f"{float(metrics['test_r2']):.3f}",
-            help=(
-                "The proportion of variation in test premiums "
-                "explained by the model. Higher is generally better."
-            ),
-        )
-
-        st.metric(
-            "Test RMSE",
-            f"£{float(metrics['test_rmse']):,.2f}",
-            help=(
-                "A measure that gives additional weight to "
-                "larger prediction errors."
-            ),
-        )
-
-    with metric_col_2:
-        st.metric(
-            "Test MAE",
-            f"£{float(metrics['test_mae']):,.2f}",
-            help=(
-                "The average absolute difference between "
-                "predicted and actual premiums."
-            ),
-        )
-
-        st.metric(
-            "Cross-validation R²",
-            f"{float(metrics['cv_r2_mean']):.3f}",
-            help=(
-                "Average R² across multiple validation folds."
-            ),
-        )
-
-    st.write(
-        f"The model was trained using "
-        f"**{int(metrics['training_rows']):,} records** "
-        f"and evaluated on a separate test set."
-    )
-
-
-# ==========================================================
-# METHODOLOGY AND LIMITATIONS
-# ==========================================================
 
 with st.expander(
-    "Methodology and limitations",
-    expanded=False,
+    "Methodology, assumptions, and limitations"
 ):
     st.markdown(
         """
-        **Method**
+        **Dataset assumptions**
 
-        - XGBoost regression model
-        - One-hot encoding for categorical values
-        - Engineered age, BMI, and interaction features
-        - Randomised hyperparameter search
-        - Five-fold cross-validation
-        - Separate held-out test set
+        - Each row is treated as one person and one treatment claim.
+        - The `expenses` field is treated as the hospital bill.
+        - The `premium` field is treated as the customer's contribution
+          towards that treatment.
+        - The dataset is assumed to contain no repeat customers.
+        - One treatment per year is the default policy-pricing assumption.
 
-        **Important limitations**
+        **Treatment contribution model**
 
-        - The model learns patterns from the supplied demonstration
-          dataset and can reproduce limitations or biases in that data.
-        - Feature importance describes the model, not causation.
-        - The displayed estimate range uses average historical model
-          error and is not a guarantee.
-        - Medical expenses are excluded to reduce target leakage and
-          keep the inputs suitable for a simple user interface.
-        - The model has not been calibrated or validated for real
-          insurance pricing, underwriting, or eligibility decisions.
+        - Uses customer details and treatment cost.
+        - Predicts the customer's treatment contribution.
+        - The insurer contribution is the hospital bill minus the
+          estimated customer contribution.
+
+        **Policy illustration model**
+
+        - Uses customer details to predict one expected treatment cost.
+        - Estimates the insurer-funded portion of that treatment.
+        - Multiplies the insurer-funded amount by the selected number
+          of expected treatments.
+        - Adds visible administration, uncertainty, and margin loadings.
+        - Divides the annual illustration by twelve for a monthly
+          equivalent.
+
+        **Eligibility**
+
+        - Eligibility only means that the application can produce an
+          indicative illustration from complete input information.
+        - It is not policy approval, underwriting approval, or an
+          assessment of legal eligibility.
+        - The application does not automatically reject a person based
+          on BMI, gender, predicted treatment cost, or another customer
+          characteristic.
+
+        **Limitations**
+
+        - The yearly price is a transparent scenario calculation, not
+          an actuarially validated insurance premium.
+        - The pricing loadings are demonstration assumptions.
+        - The data does not contain policy limits, deductibles,
+          commissions, taxes, claim frequency history, inflation,
+          medical trends, or capital requirements.
+        - Model outputs may reproduce limitations or biases in the
+          supplied dataset.
+        - Feature importance describes model behaviour and does not
+          establish causation.
         """
     )
 
-
-# ==========================================================
-# FOOTER
-# ==========================================================
-
 st.warning(
-    "Proof of concept only. The estimate must not be used for "
-    "real insurance pricing, underwriting, eligibility, medical, "
-    "or financial decisions."
+    "Proof of concept only. This application must not be "
+    "used for real insurance pricing, underwriting, policy "
+    "approval, claims settlement, medical decisions, or "
+    "financial decisions."
 )
 
 st.caption(
-    "Demonstration application built with Streamlit, scikit-learn, "
-    "and XGBoost."
+    "Demonstration application built with Streamlit, "
+    "scikit-learn, pandas, and XGBoost."
 )

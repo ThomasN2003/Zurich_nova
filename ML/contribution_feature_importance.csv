@@ -1,0 +1,16 @@
+feature,importance
+Expenses,0.3302305
+Discount No,0.25899532
+Age,0.22603813
+Age Squared,0.12599134
+Age Bmi,0.042265765
+Bmi,0.0063350787
+Discount Yes,0.0038282324
+Children,0.0017239377
+Bmi Squared,0.0011806946
+Region Northwest,0.0007589586
+Region Northeast,0.00073299074
+Region Southwest,0.0006857392
+Region Southeast,0.00066959497
+Gender Female,0.00031366694
+Gender Male,0.0002500669

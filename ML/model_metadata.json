@@ -1,32 +1,58 @@
 {
-    "model_type": "XGBoost Regressor",
-    "target": "premium",
-    "included_features": [
-        "age",
-        "bmi",
-        "children",
-        "gender",
-        "discount_eligibility",
-        "region",
-        "age_squared",
-        "bmi_squared",
-        "age_bmi"
+    "project_type": "Insurance pricing proof of concept",
+    "dataset_assumptions": [
+        "Each row represents one person and one treatment claim.",
+        "Expenses is treated as the hospital treatment cost.",
+        "Premium is treated as the customer's treatment contribution.",
+        "The yearly policy illustration uses transparent pricing assumptions and is not actuarially validated."
     ],
-    "excluded_leakage_fields": [
-        "premium",
-        "expenses"
-    ],
-    "best_parameters": {
-        "subsample": 0.9,
-        "reg_lambda": 1.0,
-        "reg_alpha": 0.0,
-        "n_estimators": 150,
-        "min_child_weight": 3,
-        "max_depth": 5,
-        "learning_rate": 0.02,
-        "colsample_bytree": 0.9
+    "contribution_model": {
+        "target": "premium",
+        "features": [
+            "age",
+            "bmi",
+            "children",
+            "gender",
+            "discount_eligibility",
+            "region",
+            "age_squared",
+            "bmi_squared",
+            "age_bmi",
+            "expenses"
+        ],
+        "best_parameters": {
+            "subsample": 0.9,
+            "reg_lambda": 5.0,
+            "reg_alpha": 0.2,
+            "n_estimators": 500,
+            "min_child_weight": 3,
+            "max_depth": 3,
+            "learning_rate": 0.1,
+            "colsample_bytree": 0.8
+        }
     },
-    "random_state": 42,
-    "test_size": 0.2,
-    "cross_validation_folds": 5
+    "expense_model": {
+        "target": "expenses",
+        "features": [
+            "age",
+            "bmi",
+            "children",
+            "gender",
+            "discount_eligibility",
+            "region",
+            "age_squared",
+            "bmi_squared",
+            "age_bmi"
+        ],
+        "best_parameters": {
+            "subsample": 0.9,
+            "reg_lambda": 1.0,
+            "reg_alpha": 0.05,
+            "n_estimators": 150,
+            "min_child_weight": 5,
+            "max_depth": 3,
+            "learning_rate": 0.02,
+            "colsample_bytree": 0.9
+        }
+    }
 }
