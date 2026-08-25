@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lifepricing
+    username: ${DB_USER:life}
+    password: ${DB_PASSWORD:life}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none            # the schema comes from postgres_schema.sql
+    open-in-view: false
+  security:
+    user:
+      name: ${API_USER:admin}
+      password: ${API_PASSWORD:changeme}
+
+server:
+  port: 8080

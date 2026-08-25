@@ -1,0 +1,92 @@
+
+# 2026-08-25 13:15:58.963787
++n
+
+# 2026-08-25 13:16:12.255139
++fix errors. curl -i -X POST http://localhost:8080/quotes \
++  -H 'Content-Type: application/json' \
++  -d '{"age":35,"sex":"M","smoker":false,"bmi":26.0,"sumAssured":250000,"termYears":25}'..ryanribeiro@MacBook-Pro claudelife-pricing-api % curl -i -X POST http://localhost:8080/quotes \
++  -H 'Content-Type: application/json' \
++  -d '{"age":35,"sex":"M","smoker":false,"bmi":26.0,"sumAssured":250000,"termYears":25}'
++HTTP/1.1 401 
++Set-Cookie: JSESSIONID=59103CAE07FA3CBA96BB853D1A2F16F0; Path=/; HttpOnly
++X-Content-Type-Options: nosniff
++X-XSS-Protection: 0
++Cache-Control: no-cache, no-store, max-age=0, must-revalidate
++Pragma: no-cache
++Expires: 0
++X-Frame-Options: DENY
++WWW-Authenticate: Basic realm="Realm"
++Content-Length: 0
++Date: Tue, 25 Aug 2026 12:15:34 GMT
++
++ryanribeiro@MacBook-Pro claudelife-pricing-api % 
++..ryanribeiro@MacBook-Pro claudelife-pricing-api % mvn clean spring-boot:run
++[INFO] Scanning for projects...
++[INFO] 
++[INFO] --------------------< com.example:life-pricing-api >--------------------
++[INFO] Building life-pricing-api 0.0.1-SNAPSHOT
++[INFO]   from pom.xml
++[INFO] --------------------------------[ jar ]---------------------------------
++[INFO] 
++[INFO] --- clean:3.3.2:clean (default-clean) @ life-pricing-api ---
++[INFO] Deleting /Users/ryanribeiro/Downloads/claudelife-pricing-api/target
++[INFO] 
++[INFO] >>> spring-boot:3.3.4:run (default-cli) > test-compile @ life-pricing-api >>>
++[INFO] 
++[INFO] --- resources:3.3.1:resources (default-resources) @ life-pricing-api ---
++[INFO] Copying 1 resource from src/main/resources to target/classes
++[INFO] Copying 5 resources from src/main/resources to target/classes
++[INFO] 
++[INFO] --- compiler:3.13.0:compile (default-compile) @ life-pricing-api ---
++[INFO] Recompiling the module because of changed source code.
++[INFO] Compiling 30 source files with javac [debug parameters release 21] to target/classes
++[INFO] 
++[INFO] --- resources:3.3.1:testResources (default-testResources) @ life-pricing-api ---
++[INFO] skip non existing resourceDirectory /Users/ryanribeiro/Downloads/claudelife-pricing-api/src/test/resources
++[INFO] 
++[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ life-pricing-api ---
++[INFO] No sources to compile
++[INFO] 
++[INFO] <<< spring-boot:3.3.4:run (default-cli) < test-compile @ life-pricing-api <<<
++[INFO] 
++[INFO] 
++[INFO] --- spring-boot:3.3.4:run (default-cli) @ life-pricing-api ---
++[INFO] Attaching agents: []
++
++  .   ____          _            __ _ _
++ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
++( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
++ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
++  '  |____| .__|_| |_|_| |_\__, | / / / /
++ =========|_|==============|___/=/_/_/_/
++
++ :: Spring Boot ::                (v3.3.4)
++
++2026-08-25T13:15:31.317+01:00  INFO 6746 --- [           main] c.e.lifepricing.LifePricingApplication   : Starting LifePricingApplication using Java 21.0.11 with PID 6746 (/Users/ryanribeiro/Downloads/claudelife-pricing-api/target/classes started by ryanribeiro in /Users/ryanribeiro/Downloads/claudelife-pricing-api)
++2026-08-25T13:15:31.318+01:00  INFO 6746 --- [           main] c.e.lifepricing.LifePricingApplication   : No active profile set, falling back to 1 default profile: "default"
++2026-08-25T13:15:31.474+01:00  INFO 6746 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-08-25T13:15:31.491+01:00  INFO 6746 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 14 ms. Found 4 JPA repository interfaces.
++2026-08-25T13:15:31.620+01:00  INFO 6746 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
++2026-08-25T13:15:31.624+01:00  INFO 6746 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
++2026-08-25T13:15:31.624+01:00  INFO 6746 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
++2026-08-25T13:15:31.636+01:00  INFO 6746 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
++2026-08-25T13:15:31.636+01:00  INFO 6746 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 308 ms
++2026-08-25T13:15:31.677+01:00  INFO 6746 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
++2026-08-25T13:15:31.690+01:00  INFO 6746 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
++2026-08-25T13:15:31.698+01:00  INFO 6746 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
++2026-08-25T13:15:31.774+01:00  INFO 6746 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-08-25T13:15:31.782+01:00  INFO 6746 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
++2026-08-25T13:15:31.834+01:00  INFO 6746 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@4656fcc5
++2026-08-25T13:15:31.834+01:00  INFO 6746 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
++2026-08-25T13:15:32.082+01:00  INFO 6746 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-08-25T13:15:32.083+01:00  INFO 6746 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-08-25T13:15:32.139+01:00  INFO 6746 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
++2026-08-25T13:15:32.195+01:00  INFO 6746 --- [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
++2026-08-25T13:15:32.289+01:00  INFO 6746 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
++2026-08-25T13:15:32.331+01:00  INFO 6746 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
++2026-08-25T13:15:32.333+01:00  INFO 6746 --- [           main] c.e.lifepricing.LifePricingApplication   : Started LifePricingApplication in 1.113 seconds (process running for 1.199)
++2026-08-25T13:15:34.833+01:00  INFO 6746 --- [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
++2026-08-25T13:15:34.833+01:00  INFO 6746 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
++2026-08-25T13:15:34.834+01:00  INFO 6746 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
++
