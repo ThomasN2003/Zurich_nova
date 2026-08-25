@@ -133,7 +133,7 @@ search = RandomizedSearchCV(
     scoring="r2",
     verbose=1,
     random_state=42,
-    n_jobs=-1
+    n_jobs=1
 )
 
 print("=" * 60)
@@ -159,7 +159,8 @@ cv_scores = cross_val_score(
     X,
     y,
     cv=5,
-    scoring="r2"
+    scoring="r2",
+    n_jobs=1
 )
 
 print("\nCross Validation Results")
@@ -272,4 +273,4 @@ plt.show()
 print("\nSaved:")
 print("- feature_importance.png")
 
-print("\nTraining
+print("\nTraining Complete")
